@@ -10,6 +10,15 @@ x-crm-env: &crm-env
   # LOCAL runs workflow code steps unsandboxed; fine for our own team, switch to
   # LAMBDA before hosting outside clients.
   LOGIC_FUNCTION_TYPE: ${LOGIC_FUNCTION_TYPE:-DISABLED}
+  # Office 365 mailbox sign-in. Off until AUTH_MICROSOFT_ENABLED=true and the app
+  # registration's id and secret are in .env; the callbacks must match the registration.
+  AUTH_MICROSOFT_ENABLED: ${AUTH_MICROSOFT_ENABLED:-false}
+  AUTH_MICROSOFT_CLIENT_ID: ${AUTH_MICROSOFT_CLIENT_ID:-}
+  AUTH_MICROSOFT_CLIENT_SECRET: ${AUTH_MICROSOFT_CLIENT_SECRET:-}
+  AUTH_MICROSOFT_CALLBACK_URL: ${SERVER_URL}/auth/microsoft/redirect
+  AUTH_MICROSOFT_APIS_CALLBACK_URL: ${SERVER_URL}/auth/microsoft-apis/get-access-token
+  MESSAGING_PROVIDER_MICROSOFT_ENABLED: ${AUTH_MICROSOFT_ENABLED:-false}
+  CALENDAR_PROVIDER_MICROSOFT_ENABLED: ${AUTH_MICROSOFT_ENABLED:-false}
   # To send invites and notifications, add EMAIL_DRIVER=smtp plus EMAIL_FROM_ADDRESS
   # and EMAIL_SMTP_HOST/PORT/USER/PASSWORD here; blank values fail validation.
 
