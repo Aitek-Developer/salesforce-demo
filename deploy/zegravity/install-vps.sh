@@ -3,14 +3,16 @@
 #
 #   curl -fsSL https://raw.githubusercontent.com/Aitek-Developer/salesforce-demo/zegravity/deploy/zegravity/install-vps.sh | bash
 #
-# Safe to re-run. It only adds files for crm.zgravity.io; existing sites are never
+# Safe to re-run. It only adds files for the CRM domain; existing sites are never
 # edited, and any nginx change that fails `nginx -t` is removed before reloading.
 set -euo pipefail
 # Parse the whole script before running any of it, so a command that reads stdin
 # cannot swallow the rest of it when this is piped from curl.
 {
 
-DOMAIN="${DOMAIN:-crm.zgravity.io}"
+DOMAIN="${DOMAIN:-crm.zegravity.com}"
+# Earlier installs used this address; its site file and certificate are retired.
+OLD_DOMAIN=crm.zgravity.io
 APP_DIR=/opt/zegravity-crm
 PROXY_DIR=/opt/nginx-proxy
 PROXY_CONTAINER=nginx-proxy-nginx-1
@@ -65,6 +67,10 @@ if [ ! -f .env ]; then
   echo "created .env with new secrets (back this file up)"
 else
   echo "keeping existing .env"
+  if ! grep -qx "SERVER_URL=https://$DOMAIN" .env; then
+    sed -i "s#^SERVER_URL=.*#SERVER_URL=https://$DOMAIN#" .env
+    echo "updated SERVER_URL to https://$DOMAIN"
+  fi
 fi
 # Join the proxy network under a stable name so nginx can reach the app.
 cat > docker-compose.override.yml <<EOF
@@ -126,6 +132,24 @@ sed -E -e "s/${TEMPLATE_SITE//./\\.}/$DOMAIN/g" \
 grep -q "zegravity-crm:3000" /tmp/zg-site.new || fail "could not adapt $TEMPLATE_PATH (unexpected upstream)"
 mv /tmp/zg-site.new "$SITE_FILE"
 reload_proxy_or_revert "$SITE_FILE"
+
+step "Retiring the old $OLD_DOMAIN address"
+OLD_SITE_FILE="$(dirname "$SITE_FILE")/${SITE_NAME//$DOMAIN/$OLD_DOMAIN}"
+if [ "$OLD_SITE_FILE" != "$SITE_FILE" ] && [ -f "$OLD_SITE_FILE" ]; then
+  mv "$OLD_SITE_FILE" "/tmp/$(basename "$OLD_SITE_FILE").removed"
+  if docker exec "$PROXY_CONTAINER" nginx -t </dev/null >/tmp/zg-nginx-test.log 2>&1; then
+    docker exec "$PROXY_CONTAINER" nginx -s reload </dev/null
+    echo "removed $OLD_SITE_FILE"
+  else
+    mv "/tmp/$(basename "$OLD_SITE_FILE").removed" "$OLD_SITE_FILE"
+    echo "kept $OLD_SITE_FILE (nginx test failed without it)"
+  fi
+else
+  echo "no old site file"
+fi
+if [ -d "/etc/letsencrypt/live/$OLD_DOMAIN" ] && command -v certbot >/dev/null; then
+  certbot delete --cert-name "$OLD_DOMAIN" --non-interactive </dev/null >/dev/null 2>&1 && echo "deleted the $OLD_DOMAIN certificate" || true
+fi
 
 step "Checking https://$DOMAIN"
 sleep 3

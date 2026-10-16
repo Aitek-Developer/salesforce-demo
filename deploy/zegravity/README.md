@@ -24,7 +24,7 @@ docker compose up -d
 ```
 
 The app listens on `127.0.0.1:3000`; put a reverse proxy with HTTPS in front of it
-for `crm.zgravity.io`. Keep the `.env` file backed up — losing `ENCRYPTION_KEY`
+for `crm.zegravity.com`. Keep the `.env` file backed up — losing `ENCRYPTION_KEY`
 makes stored secrets unreadable.
 
 ## Update

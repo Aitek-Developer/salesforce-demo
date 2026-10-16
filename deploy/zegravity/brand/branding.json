@@ -58,7 +58,7 @@
   {
    "file": "packages/twenty-emails/src/emails/clean-suspended-workspace.email.tsx",
    "old": "        href=\"https://app.twenty.com/\"\n",
-   "new": "        href=\"https://crm.zgravity.io/\"\n"
+   "new": "        href=\"https://crm.zegravity.com/\"\n"
   },
   {
    "file": "packages/twenty-emails/src/emails/password-update-notify.email.tsx",
@@ -403,12 +403,12 @@
   {
    "file": "packages/twenty-server/src/engine/core-modules/well-known/utils/__tests__/build-mcp-server-card.util.spec.ts",
    "old": "    expect(card.name).toBe('com.twenty/twenty');\n",
-   "new": "    expect(card.name).toBe('io.zgravity/crm');\n"
+   "new": "    expect(card.name).toBe('com.zegravity/crm');\n"
   },
   {
    "file": "packages/twenty-server/src/engine/core-modules/well-known/utils/build-mcp-server-card.util.ts",
    "old": "  name: 'com.twenty/twenty',\n",
-   "new": "  name: 'io.zgravity/crm',\n"
+   "new": "  name: 'com.zegravity/crm',\n"
   },
   {
    "file": "packages/twenty-server/src/engine/core-modules/well-known/utils/build-mcp-server-card.util.ts",
@@ -418,7 +418,7 @@
   {
    "file": "packages/twenty-server/src/engine/core-modules/well-known/utils/build-mcp-server-card.util.ts",
    "old": "    'Read and write your Twenty CRM data - companies, people, opportunities, tasks, notes and any custom objects - from AI assistants. Tools are discovered at runtime and scoped to the authenticated workspace.',\n  websiteUrl: 'https://twenty.com',\n",
-   "new": "    'Read and write your ZeGravity CRM data - companies, people, opportunities, tasks, notes and any custom objects - from AI assistants. Tools are discovered at runtime and scoped to the authenticated workspace.',\n  websiteUrl: 'https://zgravity.io',\n"
+   "new": "    'Read and write your ZeGravity CRM data - companies, people, opportunities, tasks, notes and any custom objects - from AI assistants. Tools are discovered at runtime and scoped to the authenticated workspace.',\n  websiteUrl: 'https://zegravity.com',\n"
   },
   {
    "file": "packages/twenty-server/src/engine/core-modules/well-known/utils/build-mcp-server-card.util.ts",
@@ -472,6 +472,6 @@
   }
  ],
  "new_files": {
-  "packages/twenty-shared/src/constants/Brand.ts": "// White-label identity for the ZeGravity build of this CRM; change here to rebrand.\nexport const BRAND = {\n  name: 'ZeGravity',\n  productName: 'ZeGravity CRM',\n  websiteUrl: 'https://zgravity.io',\n  appUrl: 'https://crm.zgravity.io',\n  companyLine: 'ZeGravity by Aitek Solutions',\n} as const;\n"
+  "packages/twenty-shared/src/constants/Brand.ts": "// White-label identity for the ZeGravity build of this CRM; change here to rebrand.\nexport const BRAND = {\n  name: 'ZeGravity',\n  productName: 'ZeGravity CRM',\n  websiteUrl: 'https://zegravity.com',\n  appUrl: 'https://crm.zegravity.com',\n  companyLine: 'ZeGravity by Aitek Solutions',\n} as const;\n"
  }
 }
