@@ -1,0 +1,86 @@
+name: ZeGravity CRM image
+
+# Builds the white-labelled ZeGravity CRM image (server + front) and publishes it
+# to GitHub Container Registry so the VPS only has to pull it.
+on:
+  push:
+    branches: [zegravity]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: zegravity-image
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read app version
+        id: version
+        run: |
+          VERSION=$(grep -oE "'[0-9]+\.[0-9]+\.[0-9]+'" packages/twenty-server/src/engine/core-modules/upgrade/constants/twenty-current-version.constant.ts | tr -d "'")
+          echo "app_version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/zegravity-crm" >> "$GITHUB_OUTPUT"
+
+      # The white-label lives in deploy/zegravity/brand and is applied on top of
+      # upstream at build time, so pulling upstream updates never conflicts.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Apply ZeGravity branding
+        run: python3 deploy/zegravity/brand/apply-branding.py
+
+      - name: Generate ZeGravity icons
+        run: |
+          pip install cairosvg pillow
+          python3 deploy/zegravity/brand/generate-icons.py
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Regenerate theme tokens and translation catalogs
+        run: |
+          corepack enable
+          yarn install --immutable --mode=skip-build
+          npx nx build twenty-shared
+          npx nx generateTokens twenty-ui
+          for package in twenty-emails twenty-server twenty-front; do
+            (cd "packages/${package}" && npx lingui extract --overwrite --clean && npx lingui compile --typescript)
+          done
+          # Free runner disk before the Docker build.
+          rm -rf node_modules packages/*/node_modules
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: packages/twenty-docker/twenty/Dockerfile
+          target: twenty
+          platforms: linux/amd64
+          push: true
+          build-args: |
+            APP_VERSION=${{ steps.version.outputs.app_version }}
+          tags: |
+            ${{ steps.version.outputs.image }}:latest
+            ${{ steps.version.outputs.image }}:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.title=ZeGravity CRM
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

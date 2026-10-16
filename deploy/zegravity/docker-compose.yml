@@ -1,0 +1,81 @@
+name: zegravity-crm
+
+x-crm-env: &crm-env
+  PG_DATABASE_URL: postgres://postgres:${PG_DATABASE_PASSWORD}@db:5432/default
+  SERVER_URL: ${SERVER_URL}
+  REDIS_URL: redis://redis:6379
+  STORAGE_TYPE: ${STORAGE_TYPE:-local}
+  ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+  EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-ZeGravity CRM}
+  EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-}
+  EMAIL_DRIVER: ${EMAIL_DRIVER:-}
+  EMAIL_SMTP_HOST: ${EMAIL_SMTP_HOST:-}
+  EMAIL_SMTP_PORT: ${EMAIL_SMTP_PORT:-}
+  EMAIL_SMTP_USER: ${EMAIL_SMTP_USER:-}
+  EMAIL_SMTP_PASSWORD: ${EMAIL_SMTP_PASSWORD:-}
+
+services:
+  server:
+    image: ghcr.io/aitek-developer/zegravity-crm:${TAG:-latest}
+    volumes:
+      - server-local-data:/app/packages/twenty-server/.local-storage
+    ports:
+      # Only reachable through the reverse proxy on this host.
+      - "127.0.0.1:3000:3000"
+    environment:
+      <<: *crm-env
+      NODE_PORT: 3000
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: curl --fail http://localhost:3000/healthz
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: always
+
+  worker:
+    image: ghcr.io/aitek-developer/zegravity-crm:${TAG:-latest}
+    volumes:
+      - server-local-data:/app/packages/twenty-server/.local-storage
+    command: ["yarn", "worker:prod"]
+    environment:
+      <<: *crm-env
+      DISABLE_DB_MIGRATIONS: "true"
+      DISABLE_CRON_JOBS_REGISTRATION: "true"
+    depends_on:
+      server:
+        condition: service_healthy
+    restart: always
+
+  db:
+    image: postgres:16
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: default
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${PG_DATABASE_PASSWORD}
+    healthcheck:
+      test: pg_isready -U postgres -h localhost -d postgres
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: always
+
+  redis:
+    image: redis:7
+    command: ["--maxmemory-policy", "noeviction"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: always
+
+volumes:
+  db-data:
+  server-local-data:

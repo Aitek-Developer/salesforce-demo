@@ -1,0 +1,467 @@
+{
+ "edits": [
+  {
+   "file": "packages/twenty-emails/src/components/BaseHead.tsx",
+   "old": "      <title>Twenty email</title>\n",
+   "new": "      <title>ZeGravity email</title>\n"
+  },
+  {
+   "file": "packages/twenty-emails/src/components/Footer.tsx",
+   "old": "import { Column, Container, Row } from 'react-email';\nimport { Link } from 'src/components/Link';\n",
+   "new": "import { Column, Container, Row } from 'react-email';\nimport { BRAND } from 'twenty-shared/constants';\nimport { Link } from 'src/components/Link';\n"
+  },
+  {
+   "file": "packages/twenty-emails/src/components/Footer.tsx",
+   "old": "              href=\"https://twenty.com/\"\n",
+   "new": "              href={BRAND.websiteUrl}\n"
+  },
+  {
+   "file": "packages/twenty-emails/src/components/Footer.tsx",
+   "old": "              aria-label={i18n._(\"Visit Twenty's website\")}\n",
+   "new": "              aria-label={i18n._(\"Visit ZeGravity's website\")}\n"
+  },
+  {
+   "file": "packages/twenty-emails/src/components/Footer.tsx",
+   "old": "              href=\"https://github.com/twentyhq/twenty\"\n              value={i18n._('Github')}\n              aria-label={i18n._(\"Visit Twenty's GitHub repository\")}\n            />\n          </ShadowText>\n        </Column>\n        <Column>\n          <ShadowText>\n            <Link\n              href=\"https://docs.twenty.com/getting-started/introduction\"\n              value={i18n._('User guide')}\n              aria-label={i18n._(\"Read Twenty's user guide\")}\n            />\n          </ShadowText>\n        </Column>\n        <Column>\n          <ShadowText>\n            <Link\n              href=\"https://docs.twenty.com/\"\n              value={i18n._('Developers')}\n              aria-label={i18n._(\"Visit Twenty's developer documentation\")}\n",
+   "new": "              href={BRAND.appUrl}\n              value={i18n._('Open CRM')}\n              aria-label={i18n._('Open ZeGravity CRM')}\n"
+  },
+  {
+   "file": "packages/twenty-emails/src/components/Footer.tsx",
+   "old": "      <ShadowText>\n        <>\n          {i18n._('Twenty.com, Public Benefit Corporation')}\n          <br />\n          {i18n._('San Francisco / Paris')}\n        </>\n      </ShadowText>\n",
+   "new": "      <ShadowText>{BRAND.companyLine}</ShadowText>\n"
+  },
+  {
+   "file": "packages/twenty-emails/src/components/Logo.tsx",
+   "old": "import { Img } from 'react-email';\n\n",
+   "new": "import { Img } from 'react-email';\nimport { BRAND } from 'twenty-shared/constants';\n\n"
+  },
+  {
+   "file": "packages/twenty-emails/src/components/Logo.tsx",
+   "old": "      src=\"https://app.twenty.com/images/icons/windows11/Square150x150Logo.scale-100.png\"\n      alt=\"Twenty logo\"\n",
+   "new": "      src={`${BRAND.appUrl}/images/icons/windows11/Square150x150Logo.scale-100.png`}\n      alt={`${BRAND.name} logo`}\n"
+  },
+  {
+   "file": "packages/twenty-emails/src/components/WhatIsTwenty.tsx",
+   "old": "      <SubTitle value={i18n._('What is Twenty?')} />\n",
+   "new": "      <SubTitle value={i18n._('What is ZeGravity CRM?')} />\n"
+  },
+  {
+   "file": "packages/twenty-emails/src/emails/billing-trial-converting.email.tsx",
+   "old": "        <Trans id=\"If Twenty is working for you, you're all set — there's nothing to do. If it's not the right fit, you can cancel in one click before then and you won't be charged.\" />\n",
+   "new": "        <Trans id=\"If ZeGravity is working for you, you're all set — there's nothing to do. If it's not the right fit, you can cancel in one click before then and you won't be charged.\" />\n"
+  },
+  {
+   "file": "packages/twenty-emails/src/emails/clean-suspended-workspace.email.tsx",
+   "old": "        <Trans id=\"If you'd ever like to give Twenty another try, you can start a fresh workspace in minutes — we'd love to have you back.\" />\n",
+   "new": "        <Trans id=\"If you'd ever like to give ZeGravity another try, you can start a fresh workspace in minutes — we'd love to have you back.\" />\n"
+  },
+  {
+   "file": "packages/twenty-emails/src/emails/clean-suspended-workspace.email.tsx",
+   "old": "        href=\"https://app.twenty.com/\"\n",
+   "new": "        href=\"https://crm.zgravity.io/\"\n"
+  },
+  {
+   "file": "packages/twenty-emails/src/emails/password-update-notify.email.tsx",
+   "old": "      <CallToAction value={i18n._('Connect to Twenty')} href={link} />\n",
+   "new": "      <CallToAction value={i18n._('Connect to ZeGravity')} href={link} />\n"
+  },
+  {
+   "file": "packages/twenty-emails/src/emails/send-email-verification-link.email.tsx",
+   "old": "    ? 'We received a request to change the email address associated with your Twenty account. Click below to confirm this change.'\n    : 'Thanks for registering for an account on Twenty! Before we get started, we just need to confirm that this is you. Click below to verify your email address.';\n",
+   "new": "    ? 'We received a request to change the email address associated with your ZeGravity account. Click below to confirm this change.'\n    : 'Thanks for registering for an account on ZeGravity! Before we get started, we just need to confirm that this is you. Click below to verify your email address.';\n"
+  },
+  {
+   "file": "packages/twenty-emails/src/emails/send-invite-link.email.tsx",
+   "old": "      <Title value={i18n._('Join your team on Twenty')} />\n",
+   "new": "      <Title value={i18n._('Join your team on ZeGravity')} />\n"
+  },
+  {
+   "file": "packages/twenty-front/index.html",
+   "old": "    <meta name=\"theme-color\" content=\"#000000\" />\n    <meta name=\"description\" content=\"A modern open-source CRM\" />\n",
+   "new": "    <meta name=\"theme-color\" content=\"#06070f\" />\n    <meta name=\"description\" content=\"ZeGravity CRM — customers, leads and pipeline\" />\n"
+  },
+  {
+   "file": "packages/twenty-front/index.html",
+   "old": "      property=\"og:image\"\n      content=\"https://raw.githubusercontent.com/twentyhq/twenty/main/docs/static/img/social-card.png\"\n    />\n",
+   "new": "      property=\"og:image\"\n      content=\"/images/icons/windows11/Wide310x150Logo.scale-400.png\"\n    />\n"
+  },
+  {
+   "file": "packages/twenty-front/index.html",
+   "old": "    <meta property=\"og:description\" content=\"A modern open-source CRM\" />\n    <meta property=\"og:title\" content=\"Twenty\" />\n",
+   "new": "    <meta property=\"og:description\" content=\"ZeGravity CRM — customers, leads and pipeline\" />\n    <meta property=\"og:title\" content=\"ZeGravity CRM\" />\n"
+  },
+  {
+   "file": "packages/twenty-front/index.html",
+   "old": "      name=\"twitter:image\"\n      content=\"https://raw.githubusercontent.com/twentyhq/twenty/main/docs/static/img/social-card.png\"\n    />\n",
+   "new": "      name=\"twitter:image\"\n      content=\"/images/icons/windows11/Wide310x150Logo.scale-400.png\"\n    />\n"
+  },
+  {
+   "file": "packages/twenty-front/index.html",
+   "old": "    <meta name=\"twitter:description\" content=\"A modern open-source CRM\" />\n    <meta name=\"twitter:title\" content=\"Twenty\" />\n    <title>Twenty</title>\n",
+   "new": "    <meta name=\"twitter:description\" content=\"ZeGravity CRM — customers, leads and pipeline\" />\n    <meta name=\"twitter:title\" content=\"ZeGravity CRM\" />\n    <title>ZeGravity CRM</title>\n"
+  },
+  {
+   "file": "packages/twenty-front/public/manifest.json",
+   "old": "  \"short_name\": \"Twenty\",\n  \"name\": \"Twenty\",\n",
+   "new": "  \"short_name\": \"ZeGravity\",\n  \"name\": \"ZeGravity CRM\",\n"
+  },
+  {
+   "file": "packages/twenty-front/public/manifest.json",
+   "old": "  \"theme_color\": \"#000000\",\n  \"background_color\": \"#ffffff\",\n",
+   "new": "  \"theme_color\": \"#06070f\",\n  \"background_color\": \"#06070f\",\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/activities/timeline-activities/utils/__tests__/getTimelineActivityAuthorFullName.test.ts",
+   "old": "  it('should return \"Twenty\" if the workspace member is not defined', () => {\n",
+   "new": "  it('should return \"ZeGravity\" if the workspace member is not defined', () => {\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/activities/timeline-activities/utils/__tests__/getTimelineActivityAuthorFullName.test.ts",
+   "old": "    expect(result).toBe('Twenty');\n",
+   "new": "    expect(result).toBe('ZeGravity');\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/activities/timeline-activities/utils/getTimelineActivityAuthorFullName.ts",
+   "old": "  return 'Twenty';\n",
+   "new": "  return 'ZeGravity';\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/auth/sign-in-up/components/FooterNote.tsx",
+   "old": "import { ONBOARDING_CONTENT_BLOCK_WIDTH } from '@/onboarding/constants/OnboardingContentBlockWidth';\nimport { themeCssVariables } from 'twenty-ui/theme-constants';\n",
+   "new": "import { ONBOARDING_CONTENT_BLOCK_WIDTH } from '@/onboarding/constants/OnboardingContentBlockWidth';\nimport { BRAND } from 'twenty-shared/constants';\nimport { themeCssVariables } from 'twenty-ui/theme-constants';\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/auth/sign-in-up/components/FooterNote.tsx",
+   "old": "        <Trans>By using Twenty, you agree to the</Trans>{' '}\n",
+   "new": "        <Trans>By using ZeGravity, you agree to the</Trans>{' '}\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/auth/sign-in-up/components/FooterNote.tsx",
+   "old": "          href=\"https://twenty.com/legal/terms\"\n",
+   "new": "          href={`${BRAND.websiteUrl}/terms`}\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/auth/sign-in-up/components/FooterNote.tsx",
+   "old": "            href=\"https://twenty.com/legal/dpa\"\n",
+   "new": "            href={`${BRAND.websiteUrl}/privacy`}\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/auth/sign-in-up/components/FooterNote.tsx",
+   "old": "            href=\"https://twenty.com/legal/privacy\"\n",
+   "new": "            href={`${BRAND.websiteUrl}/privacy`}\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/auth/sign-in-up/components/FooterNote.tsx",
+   "old": "      <a\n        href=\"https://twenty.com/legal/privacy\"\n        target=\"_blank\"\n",
+   "new": "      <a\n        href={`${BRAND.websiteUrl}/privacy`}\n        target=\"_blank\"\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/auth/sign-in-up/components/FooterNote.tsx",
+   "old": "      <a\n        href=\"https://twenty.com/legal/terms\"\n        target=\"_blank\"\n",
+   "new": "      <a\n        href={`${BRAND.websiteUrl}/terms`}\n        target=\"_blank\"\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/settings/billing/components/AddPaymentMethodForm.tsx",
+   "old": "      if (!isDefined(clientSecret)) {\n        enqueueErrorSnackBar({\n          message: t`Subscription error. Please retry or contact Twenty team`,\n        });\n        setIsSubmitting(false);\n",
+   "new": "      if (!isDefined(clientSecret)) {\n        enqueueErrorSnackBar({\n          message: t`Subscription error. Please retry or contact ZeGravity support`,\n        });\n        setIsSubmitting(false);\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/settings/billing/components/AddPaymentMethodForm.tsx",
+   "old": "      } else {\n        enqueueErrorSnackBar({\n          message: t`Subscription error. Please retry or contact Twenty team`,\n        });\n      }\n",
+   "new": "      } else {\n        enqueueErrorSnackBar({\n          message: t`Subscription error. Please retry or contact ZeGravity support`,\n        });\n      }\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/settings/billing/hooks/useBillingPortalSession.ts",
+   "old": "      message: t`Billing portal session error. Please retry or contact Twenty team`,\n",
+   "new": "      message: t`Billing portal session error. Please retry or contact ZeGravity support`,\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/settings/billing/hooks/useEndSubscriptionTrialPeriod.ts",
+   "old": "        message: t`Error while ending trial period. Please contact Twenty team.`,\n",
+   "new": "        message: t`Error while ending trial period. Please contact ZeGravity support.`,\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/settings/billing/hooks/useHandleCheckoutSession.ts",
+   "old": "          message: t`Checkout session error. Please retry or contact Twenty team`,\n",
+   "new": "          message: t`Checkout session error. Please retry or contact ZeGravity support`,\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/settings/billing/hooks/useHandleCheckoutSession.ts",
+   "old": "      enqueueErrorSnackBar({\n        message: t`Checkout session error. Please retry or contact Twenty team`,\n      });\n",
+   "new": "      enqueueErrorSnackBar({\n        message: t`Checkout session error. Please retry or contact ZeGravity support`,\n      });\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/settings/billing/hooks/useSubmitSubscriptionPayment.ts",
+   "old": "      if (!isDefined(paymentIntent?.clientSecret)) {\n        enqueueErrorSnackBar({\n          message: t`Subscription error. Please retry or contact Twenty team`,\n        });\n        setIsSubmitting(false);\n",
+   "new": "      if (!isDefined(paymentIntent?.clientSecret)) {\n        enqueueErrorSnackBar({\n          message: t`Subscription error. Please retry or contact ZeGravity support`,\n        });\n        setIsSubmitting(false);\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/settings/billing/hooks/useSubmitSubscriptionPayment.ts",
+   "old": "      } else {\n        enqueueErrorSnackBar({\n          message: t`Subscription error. Please retry or contact Twenty team`,\n        });\n      }\n",
+   "new": "      } else {\n        enqueueErrorSnackBar({\n          message: t`Subscription error. Please retry or contact ZeGravity support`,\n        });\n      }\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/settings/hooks/useSettingsNavigationItems.tsx",
+   "old": "          Icon: IconUsers,\n          isHidden: !permissionMap[PermissionFlagType.WORKSPACE],\n        },\n",
+   "new": "          Icon: IconUsers,\n          // White-label build: the community page links to upstream channels.\n          isHidden: true,\n        },\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/settings/hooks/useSettingsNavigationItems.tsx",
+   "old": "          Icon: IconHelpCircle,\n        },\n",
+   "new": "          Icon: IconHelpCircle,\n          // White-label build: documentation points to upstream branding.\n          isHidden: true,\n        },\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/settings/mcp-and-apis/constants/McpSetup.ts",
+   "old": "    displayName: 'Twenty',\n",
+   "new": "    displayName: 'ZeGravity CRM',\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx",
+   "old": "import OpenAiLogo from '@/settings/mcp-and-apis/assets/mcp-clients/openai.svg';\n",
+   "new": ""
+  },
+  {
+   "file": "packages/twenty-front/src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx",
+   "old": "        title: t`ChatGPT`,\n        badge: t`Official app`,\n        description: t`Open Twenty's official ChatGPT integration for your workspace.`,\n        ctaLabel: t`Open`,\n        href: MCP_SETUP.chatGptTwentyAppUrl,\n        logo: <McpClientLogo src={OpenAiLogo} invertInDarkMode />,\n      },\n      {\n",
+   "new": ""
+  },
+  {
+   "file": "packages/twenty-front/src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx",
+   "old": "        description: t`Open Claude with the Twenty connector name and MCP URL prefilled.`,\n",
+   "new": "        description: t`Open Claude with the ZeGravity CRM connector name and MCP URL prefilled.`,\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx",
+   "old": "        description: t`Open Cursor's MCP installer with the Twenty remote server config.`,\n",
+   "new": "        description: t`Open Cursor's MCP installer with the ZeGravity CRM remote server config.`,\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx",
+   "old": "        description: t`Add Twenty as a Streamable HTTP extension in Goose.`,\n",
+   "new": "        description: t`Add ZeGravity CRM as a Streamable HTTP extension in Goose.`,\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx",
+   "old": "        description: t`Open Replit with the Twenty remote server config.`,\n",
+   "new": "        description: t`Open Replit with the ZeGravity CRM remote server config.`,\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx",
+   "old": "        description: t`Add the Twenty remote server with LM Studio's install link.`,\n",
+   "new": "        description: t`Add the ZeGravity CRM remote server with LM Studio's install link.`,\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx",
+   "old": "        description: t`Configure the Twenty MCP server manually in Cline.`,\n",
+   "new": "        description: t`Configure the ZeGravity CRM MCP server manually in Cline.`,\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx",
+   "old": "        description: t`Add the Twenty MCP server as a remote context server in Zed.`,\n",
+   "new": "        description: t`Add the ZeGravity CRM MCP server as a remote context server in Zed.`,\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx",
+   "old": "        description: t`Configure the Twenty MCP server manually in Cascade.`,\n",
+   "new": "        description: t`Configure the ZeGravity CRM MCP server manually in Cascade.`,\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx",
+   "old": "        description: t`Add the Twenty MCP server from Raycast's MCP commands or settings.`,\n",
+   "new": "        description: t`Add the ZeGravity CRM MCP server from Raycast's MCP commands or settings.`,\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx",
+   "old": "        description: t`Add the Twenty MCP server in Gemini CLI settings.`,\n",
+   "new": "        description: t`Add the ZeGravity CRM MCP server in Gemini CLI settings.`,\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx",
+   "old": "        description: t`Add the Twenty MCP server to your LibreChat configuration file.`,\n",
+   "new": "        description: t`Add the ZeGravity CRM MCP server to your LibreChat configuration file.`,\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/settings/mcp-and-apis/utils/buildMcpSetupCategories.tsx",
+   "old": "        description: t`Add the Twenty MCP server from Augment Code settings.`,\n",
+   "new": "        description: t`Add the ZeGravity CRM MCP server from Augment Code settings.`,\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/settings/mcp-and-apis/utils/mcpSetup.ts",
+   "old": "    description: 'Access your Twenty workspace through MCP',\n",
+   "new": "    description: 'Access your ZeGravity CRM workspace through MCP',\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/spreadsheet-import/steps/components/MatchColumnsStep/components/ColumnGrid.tsx",
+   "old": "            <StyledGridHeader position=\"right\">{t`Twenty fields`}</StyledGridHeader>\n",
+   "new": "            <StyledGridHeader position=\"right\">{t`ZeGravity fields`}</StyledGridHeader>\n"
+  },
+  {
+   "file": "packages/twenty-front/src/modules/ui/navigation/navigation-drawer/constants/DefaultWorkspaceLogo.ts",
+   "old": "  'https://twentyhq.github.io/placeholder-images/workspaces/twenty-logo.png';\n",
+   "new": "  '/images/icons/zegravity-workspace-logo.png';\n"
+  },
+  {
+   "file": "packages/twenty-front/src/pages/auth/SignInUp.tsx",
+   "old": "      return t`Welcome to Twenty`;\n",
+   "new": "      return t`Welcome to ZeGravity`;\n"
+  },
+  {
+   "file": "packages/twenty-front/src/pages/not-found/NotFound.tsx",
+   "old": "      <PageTitle title={t`Page Not Found | Twenty`} />\n",
+   "new": "      <PageTitle title={t`Page Not Found | ZeGravity`} />\n"
+  },
+  {
+   "file": "packages/twenty-front/src/pages/settings/ai/components/SettingsAiModelsTab.tsx",
+   "old": "            description={t`Model used when you chat with Twenty`}\n",
+   "new": "            description={t`Model used when you chat with ZeGravity`}\n"
+  },
+  {
+   "file": "packages/twenty-front/src/pages/settings/ai/components/SettingsAiModelsTab.tsx",
+   "old": "            description={t`Twenty fills each level with the best model that meets your requirements`}\n",
+   "new": "            description={t`ZeGravity fills each level with the best model that meets your requirements`}\n"
+  },
+  {
+   "file": "packages/twenty-front/src/utils/__tests__/title-utils.test.ts",
+   "old": "    expect(getPageTitleFromPath('/')).toBe('Twenty');\n    expect(getPageTitleFromPath('/random')).toBe('Twenty');\n",
+   "new": "    expect(getPageTitleFromPath('/')).toBe('ZeGravity');\n    expect(getPageTitleFromPath('/random')).toBe('ZeGravity');\n"
+  },
+  {
+   "file": "packages/twenty-front/src/utils/title-utils.ts",
+   "old": "      return 'Twenty';\n",
+   "new": "      return 'ZeGravity';\n"
+  },
+  {
+   "file": "packages/twenty-server/src/engine/api/mcp/constants/mcp-server-info.const.ts",
+   "old": "  name: 'Twenty MCP Server',\n",
+   "new": "  name: 'ZeGravity CRM MCP Server',\n"
+  },
+  {
+   "file": "packages/twenty-server/src/engine/api/mcp/utils/build-mcp-server-instructions.util.ts",
+   "old": "    `You are an AI assistant for a Twenty CRM workspace.`,\n",
+   "new": "    `You are an AI assistant for a ZeGravity CRM workspace.`,\n"
+  },
+  {
+   "file": "packages/twenty-server/src/engine/api/mcp/utils/build-mcp-server-instructions.util.ts",
+   "old": "    `Twenty primitives:`,\n",
+   "new": "    `ZeGravity CRM primitives:`,\n"
+  },
+  {
+   "file": "packages/twenty-server/src/engine/api/mcp/utils/build-mcp-server-instructions.util.ts",
+   "old": "    `  http_request is ONLY for external third-party APIs, never for Twenty's own data.`,\n",
+   "new": "    `  http_request is ONLY for external third-party APIs, never for the CRM's own data.`,\n"
+  },
+  {
+   "file": "packages/twenty-server/src/engine/core-modules/application/application-registration/application-registration.exception.ts",
+   "old": "      return msg`This app requires a newer version of the Twenty server. Please upgrade your server or use a compatible app version.`;\n",
+   "new": "      return msg`This app requires a newer version of the CRM server. Please upgrade your server or use a compatible app version.`;\n"
+  },
+  {
+   "file": "packages/twenty-server/src/engine/core-modules/application/application.exception.ts",
+   "old": "      return msg`This app requires a newer version of the Twenty server. Please upgrade your server or use a compatible app version.`;\n",
+   "new": "      return msg`This app requires a newer version of the CRM server. Please upgrade your server or use a compatible app version.`;\n"
+  },
+  {
+   "file": "packages/twenty-server/src/engine/core-modules/approved-access-domain/services/approved-access-domain.service.ts",
+   "old": "      from: `${sender.name.firstName} ${sender.name.lastName} (via Twenty) <${this.twentyConfigService.get('EMAIL_FROM_ADDRESS')}>`,\n",
+   "new": "      from: `${sender.name.firstName} ${sender.name.lastName} (via ZeGravity) <${this.twentyConfigService.get('EMAIL_FROM_ADDRESS')}>`,\n"
+  },
+  {
+   "file": "packages/twenty-server/src/engine/core-modules/billing/reminders/services/billing-reminder.service.ts",
+   "old": "          subject: msg`Your Twenty trial is ending soon`,\n",
+   "new": "          subject: msg`Your ZeGravity trial is ending soon`,\n"
+  },
+  {
+   "file": "packages/twenty-server/src/engine/core-modules/billing/reminders/services/billing-reminder.service.ts",
+   "old": "          subject: msg`A heads up before your Twenty trial ends`,\n",
+   "new": "          subject: msg`A heads up before your ZeGravity trial ends`,\n"
+  },
+  {
+   "file": "packages/twenty-server/src/engine/core-modules/billing/reminders/services/billing-reminder.service.ts",
+   "old": "          subject: msg`Your Twenty plan renews soon`,\n",
+   "new": "          subject: msg`Your ZeGravity plan renews soon`,\n"
+  },
+  {
+   "file": "packages/twenty-server/src/engine/core-modules/email-verification/services/email-verification.service.ts",
+   "old": "        : msg`Welcome to Twenty: Please Confirm Your Email`;\n",
+   "new": "        : msg`Welcome to ZeGravity: Please Confirm Your Email`;\n"
+  },
+  {
+   "file": "packages/twenty-server/src/engine/core-modules/open-api/utils/base-schema.utils.ts",
+   "old": "      title: 'Twenty Api',\n",
+   "new": "      title: 'ZeGravity CRM API',\n"
+  },
+  {
+   "file": "packages/twenty-server/src/engine/core-modules/two-factor-authentication/two-factor-authentication.service.ts",
+   "old": "      const issuer = `Twenty${workspaceDisplayName ? ` - ${workspaceDisplayName}` : ''}`;\n",
+   "new": "      const issuer = `ZeGravity${workspaceDisplayName ? ` - ${workspaceDisplayName}` : ''}`;\n"
+  },
+  {
+   "file": "packages/twenty-server/src/engine/core-modules/two-factor-authentication/two-factor-authentication.service.ts",
+   "old": "      `Twenty${workspaceDisplayName ? ` - ${workspaceDisplayName}` : ''}`,\n",
+   "new": "      `ZeGravity${workspaceDisplayName ? ` - ${workspaceDisplayName}` : ''}`,\n"
+  },
+  {
+   "file": "packages/twenty-server/src/engine/core-modules/well-known/utils/__tests__/build-mcp-server-card.util.spec.ts",
+   "old": "    expect(card.name).toBe('com.twenty/twenty');\n",
+   "new": "    expect(card.name).toBe('io.zgravity/crm');\n"
+  },
+  {
+   "file": "packages/twenty-server/src/engine/core-modules/well-known/utils/build-mcp-server-card.util.ts",
+   "old": "  name: 'com.twenty/twenty',\n",
+   "new": "  name: 'io.zgravity/crm',\n"
+  },
+  {
+   "file": "packages/twenty-server/src/engine/core-modules/well-known/utils/build-mcp-server-card.util.ts",
+   "old": "  title: 'Twenty CRM',\n",
+   "new": "  title: 'ZeGravity CRM',\n"
+  },
+  {
+   "file": "packages/twenty-server/src/engine/core-modules/well-known/utils/build-mcp-server-card.util.ts",
+   "old": "    'Read and write your Twenty CRM data - companies, people, opportunities, tasks, notes and any custom objects - from AI assistants. Tools are discovered at runtime and scoped to the authenticated workspace.',\n  websiteUrl: 'https://twenty.com',\n",
+   "new": "    'Read and write your ZeGravity CRM data - companies, people, opportunities, tasks, notes and any custom objects - from AI assistants. Tools are discovered at runtime and scoped to the authenticated workspace.',\n  websiteUrl: 'https://zgravity.io',\n"
+  },
+  {
+   "file": "packages/twenty-server/src/engine/core-modules/well-known/utils/build-mcp-server-card.util.ts",
+   "old": "    url: 'https://github.com/twentyhq/twenty',\n",
+   "new": "    url: 'https://github.com/Aitek-Developer/salesforce-demo',\n"
+  },
+  {
+   "file": "packages/twenty-server/src/engine/core-modules/workspace-invitation/services/workspace-invitation.service.ts",
+   "old": "        const joinTeamMsg = msg`Join your team on Twenty`;\n",
+   "new": "        const joinTeamMsg = msg`Join your team on ZeGravity`;\n"
+  },
+  {
+   "file": "packages/twenty-server/src/engine/core-modules/workspace-invitation/services/workspace-invitation.service.ts",
+   "old": "          from: `${sender.name.firstName} ${sender.name.lastName} (via Twenty) <${this.twentyConfigService.get('EMAIL_FROM_ADDRESS')}>`,\n",
+   "new": "          from: `${sender.name.firstName} ${sender.name.lastName} (via ZeGravity) <${this.twentyConfigService.get('EMAIL_FROM_ADDRESS')}>`,\n"
+  },
+  {
+   "file": "packages/twenty-server/src/engine/metadata-modules/index-metadata/services/index-metadata.service.ts",
+   "old": "          userFriendlyMessage: msg`System indexes are required for Twenty to work and cannot be deleted.`,\n",
+   "new": "          userFriendlyMessage: msg`System indexes are required for the CRM to work and cannot be deleted.`,\n"
+  },
+  {
+   "file": "packages/twenty-server/src/modules/calendar/calendar-event-creation-manager/drivers/caldav/services/caldav-create-event.service.ts",
+   "old": "      const calendar = ical({ prodId: '//Twenty//Calendar//EN' });\n",
+   "new": "      const calendar = ical({ prodId: '//ZeGravity//Calendar//EN' });\n"
+  },
+  {
+   "file": "packages/twenty-server/test/integration/ai/suites/mcp.controller.integration-spec.ts",
+   "old": "        expect(res.body.result.serverInfo.name).toBe('Twenty MCP Server');\n",
+   "new": "        expect(res.body.result.serverInfo.name).toBe('ZeGravity CRM MCP Server');\n"
+  },
+  {
+   "file": "packages/twenty-shared/src/constants/index.ts",
+   "old": "export { BACKEND_BATCH_REQUEST_MAX_COUNT } from './BackendBatchRequestMaxCount';\nexport { CalendarStartDay } from './CalendarStartDay';\n",
+   "new": "export { BACKEND_BATCH_REQUEST_MAX_COUNT } from './BackendBatchRequestMaxCount';\nexport { BRAND } from './Brand';\nexport { CalendarStartDay } from './CalendarStartDay';\n"
+  },
+  {
+   "file": "packages/twenty-ui/design-tokens/accent.ts",
+   "old": "  primary: COLOR_TOKENS.blue5,\n  secondary: COLOR_TOKENS.blue5,\n  tertiary: COLOR_TOKENS.blue3,\n  quaternary: COLOR_TOKENS.blue2,\n  accent3570: COLOR_TOKENS.blue8,\n  accent4060: COLOR_TOKENS.blue8,\n  accent1: COLOR_TOKENS.blue1,\n  accent2: COLOR_TOKENS.blue2,\n  accent3: COLOR_TOKENS.blue3,\n  accent4: COLOR_TOKENS.blue4,\n  accent5: COLOR_TOKENS.blue5,\n  accent6: COLOR_TOKENS.blue6,\n  accent7: COLOR_TOKENS.blue7,\n  accent8: COLOR_TOKENS.blue8,\n  accent9: COLOR_TOKENS.blue9,\n  accent10: COLOR_TOKENS.blue10,\n  accent11: COLOR_TOKENS.blue11,\n  accent12: COLOR_TOKENS.blue12,\n",
+   "new": "  primary: COLOR_TOKENS.violet5,\n  secondary: COLOR_TOKENS.violet5,\n  tertiary: COLOR_TOKENS.violet3,\n  quaternary: COLOR_TOKENS.violet2,\n  accent3570: COLOR_TOKENS.violet8,\n  accent4060: COLOR_TOKENS.violet8,\n  accent1: COLOR_TOKENS.violet1,\n  accent2: COLOR_TOKENS.violet2,\n  accent3: COLOR_TOKENS.violet3,\n  accent4: COLOR_TOKENS.violet4,\n  accent5: COLOR_TOKENS.violet5,\n  accent6: COLOR_TOKENS.violet6,\n  accent7: COLOR_TOKENS.violet7,\n  accent8: COLOR_TOKENS.violet8,\n  accent9: COLOR_TOKENS.violet9,\n  accent10: COLOR_TOKENS.violet10,\n  accent11: COLOR_TOKENS.violet11,\n  accent12: COLOR_TOKENS.violet12,\n"
+  }
+ ],
+ "new_files": {
+  "packages/twenty-shared/src/constants/Brand.ts": "// White-label identity for the ZeGravity build of this CRM; change here to rebrand.\nexport const BRAND = {\n  name: 'ZeGravity',\n  productName: 'ZeGravity CRM',\n  websiteUrl: 'https://zgravity.io',\n  appUrl: 'https://crm.zgravity.io',\n  companyLine: 'ZeGravity by Aitek Solutions',\n} as const;\n"
+ }
+}
