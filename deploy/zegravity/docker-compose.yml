@@ -31,6 +31,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+      # First boot runs the database setup, which outlasts the default retries.
+      start_period: 10m
     restart: always
 
   worker:
