@@ -23,12 +23,13 @@ for path, content in spec["new_files"].items():
 for edit in spec["edits"]:
     path = edit["file"]
     text = open(path, encoding="utf-8").read()
-    if text.count(edit["old"]) == 1:
+    occurrences = text.count(edit["old"])
+    if occurrences == 1:
         text = text.replace(edit["old"], edit["new"])
         with open(path, "w", encoding="utf-8") as handle:
             handle.write(text)
         applied += 1
-    elif edit["new"] in text:
+    elif occurrences == 0 and (not edit["new"] or edit["new"] in text):
         skipped += 1
     else:
         missing.append(path)
