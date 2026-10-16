@@ -6,6 +6,9 @@
 # Safe to re-run. It only adds files for crm.zgravity.io; existing sites are never
 # edited, and any nginx change that fails `nginx -t` is removed before reloading.
 set -euo pipefail
+# Parse the whole script before running any of it, so a command that reads stdin
+# cannot swallow the rest of it when this is piped from curl.
+{
 
 DOMAIN="${DOMAIN:-crm.zgravity.io}"
 APP_DIR=/opt/zegravity-crm
@@ -21,8 +24,8 @@ fail() { printf '\nSTOPPED: %s\n' "$*" >&2; exit 1; }
 
 reload_proxy_or_revert() {
   local file="$1"
-  if docker exec "$PROXY_CONTAINER" nginx -t >/tmp/zg-nginx-test.log 2>&1; then
-    docker exec "$PROXY_CONTAINER" nginx -s reload
+  if docker exec "$PROXY_CONTAINER" nginx -t </dev/null >/tmp/zg-nginx-test.log 2>&1; then
+    docker exec "$PROXY_CONTAINER" nginx -s reload </dev/null
   else
     rm -f "$file"
     cat /tmp/zg-nginx-test.log >&2
@@ -32,8 +35,8 @@ reload_proxy_or_revert() {
 
 step "Checking the server"
 command -v docker >/dev/null || fail "docker is not installed"
-docker inspect "$PROXY_CONTAINER" >/dev/null 2>&1 || fail "$PROXY_CONTAINER is not running"
-docker network inspect "$PROXY_NETWORK" >/dev/null 2>&1 || fail "docker network $PROXY_NETWORK not found"
+docker inspect "$PROXY_CONTAINER" </dev/null >/dev/null 2>&1 || fail "$PROXY_CONTAINER is not running"
+docker network inspect "$PROXY_NETWORK" </dev/null >/dev/null 2>&1 || fail "docker network $PROXY_NETWORK not found"
 # Find the live kpi site config by content, wherever it sits under the proxy folder.
 TEMPLATE_PATH=$(grep -rlE "server_name[^;]*${TEMPLATE_SITE//./\\.}" "$PROXY_DIR" 2>/dev/null | xargs -r grep -l "kpi-dashboard:3000" | head -1) \
   || true
@@ -46,7 +49,7 @@ case "$TEMPLATE_NAME" in
   *) SITE_NAME="$DOMAIN" ;;
 esac
 SITE_FILE="$TEMPLATE_DIR/$SITE_NAME"
-docker exec "$PROXY_CONTAINER" nginx -T 2>/dev/null | grep -q "kpi-dashboard:3000" \
+docker exec "$PROXY_CONTAINER" nginx -T </dev/null 2>/dev/null | grep -q "kpi-dashboard:3000" \
   || fail "nginx is not currently loading the $TEMPLATE_SITE config; not touching the proxy"
 echo "template: $TEMPLATE_PATH"
 echo "new site file: $SITE_FILE"
@@ -76,17 +79,17 @@ networks:
     external: true
     name: $PROXY_NETWORK
 EOF
-docker compose pull --quiet
-docker compose up -d
+docker compose pull --quiet </dev/null
+docker compose up -d </dev/null
 
 step "Waiting for the CRM to start (first start sets up the database, up to 10 minutes)"
 for _ in $(seq 1 120); do
-  if docker compose exec -T server curl -sf http://localhost:3000/healthz >/dev/null 2>&1; then
+  if docker compose exec -T server curl -sf http://localhost:3000/healthz </dev/null >/dev/null 2>&1; then
     echo "CRM is healthy"; break
   fi
   sleep 5
 done
-docker compose exec -T server curl -sf http://localhost:3000/healthz >/dev/null 2>&1 \
+docker compose exec -T server curl -sf http://localhost:3000/healthz </dev/null >/dev/null 2>&1 \
   || fail "the CRM did not become healthy; run: cd $APP_DIR && docker compose logs --tail 80 server"
 
 step "Getting the HTTPS certificate for $DOMAIN"
@@ -106,10 +109,10 @@ EOF
   fi
   mkdir -p "$WEBROOT"
   if command -v certbot >/dev/null; then
-    certbot certonly --webroot -w "$WEBROOT" -d "$DOMAIN" --non-interactive --agree-tos --register-unsafely-without-email --keep-until-expiring
+    certbot certonly --webroot -w "$WEBROOT" -d "$DOMAIN" --non-interactive --agree-tos --register-unsafely-without-email --keep-until-expiring </dev/null
   else
     docker run --rm -v /etc/letsencrypt:/etc/letsencrypt -v /var/www:/var/www certbot/certbot \
-      certonly --webroot -w "$WEBROOT" -d "$DOMAIN" --non-interactive --agree-tos --register-unsafely-without-email --keep-until-expiring
+      certonly --webroot -w "$WEBROOT" -d "$DOMAIN" --non-interactive --agree-tos --register-unsafely-without-email --keep-until-expiring </dev/null
   fi
 fi
 [ -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ] || fail "certificate for $DOMAIN was not issued"
@@ -130,3 +133,5 @@ code=$(curl -s -o /dev/null -w '%{http_code}' "https://$DOMAIN/healthz" || true)
 echo "https://$DOMAIN/healthz -> HTTP $code"
 [ "$code" = 200 ] || fail "the site did not answer over HTTPS yet (HTTP $code)"
 printf '\nDONE: ZeGravity CRM is live at https://%s\nSecrets: %s/.env (back it up)\n' "$DOMAIN" "$APP_DIR"
+exit 0
+}
