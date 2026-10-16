@@ -34,9 +34,22 @@ step "Checking the server"
 command -v docker >/dev/null || fail "docker is not installed"
 docker inspect "$PROXY_CONTAINER" >/dev/null 2>&1 || fail "$PROXY_CONTAINER is not running"
 docker network inspect "$PROXY_NETWORK" >/dev/null 2>&1 || fail "docker network $PROXY_NETWORK not found"
-TEMPLATE_FILE=$(ls "$PROXY_DIR/conf.d" | grep -m1 "^${TEMPLATE_SITE}") || fail "no $TEMPLATE_SITE file in $PROXY_DIR/conf.d to copy from"
-SITE_FILE="$PROXY_DIR/conf.d/${DOMAIN}${TEMPLATE_FILE#"$TEMPLATE_SITE"}"
-echo "proxy ok, site file will be $SITE_FILE"
+# Find the live kpi site config by content, wherever it sits under the proxy folder.
+TEMPLATE_PATH=$(grep -rlE "server_name[^;]*${TEMPLATE_SITE//./\\.}" "$PROXY_DIR" 2>/dev/null | xargs -r grep -l "kpi-dashboard:3000" | head -1) \
+  || true
+[ -n "$TEMPLATE_PATH" ] || fail "could not find the $TEMPLATE_SITE nginx config under $PROXY_DIR"
+TEMPLATE_DIR=$(dirname "$TEMPLATE_PATH")
+TEMPLATE_NAME=$(basename "$TEMPLATE_PATH")
+case "$TEMPLATE_NAME" in
+  *"$TEMPLATE_SITE"*) SITE_NAME="${TEMPLATE_NAME//$TEMPLATE_SITE/$DOMAIN}" ;;
+  *.conf) SITE_NAME="$DOMAIN.conf" ;;
+  *) SITE_NAME="$DOMAIN" ;;
+esac
+SITE_FILE="$TEMPLATE_DIR/$SITE_NAME"
+docker exec "$PROXY_CONTAINER" nginx -T 2>/dev/null | grep -q "kpi-dashboard:3000" \
+  || fail "nginx is not currently loading the $TEMPLATE_SITE config; not touching the proxy"
+echo "template: $TEMPLATE_PATH"
+echo "new site file: $SITE_FILE"
 
 step "Installing the CRM in $APP_DIR"
 mkdir -p "$APP_DIR"
@@ -102,12 +115,13 @@ fi
 [ -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ] || fail "certificate for $DOMAIN was not issued"
 
 step "Publishing $DOMAIN through nginx-proxy"
-sed -e "s/${TEMPLATE_SITE//./\\.}/$DOMAIN/g" \
+sed -E -e "s/${TEMPLATE_SITE//./\\.}/$DOMAIN/g" \
     -e "s#http://kpi-dashboard:3000#http://zegravity-crm:3000#g" \
     -e "s/client_max_body_size[^;]*;/client_max_body_size 50M;/" \
-    "$PROXY_DIR/conf.d/$TEMPLATE_FILE" > "$SITE_FILE.new"
-grep -q "zegravity-crm:3000" "$SITE_FILE.new" || { rm -f "$SITE_FILE.new"; fail "could not adapt $TEMPLATE_FILE (unexpected upstream)"; }
-mv "$SITE_FILE.new" "$SITE_FILE"
+    -e "s#(ssl_(certificate|certificate_key|trusted_certificate)[[:space:]]+[^;]*/live/)[^/;]+/#\\1$DOMAIN/#" \
+    "$TEMPLATE_PATH" > "/tmp/zg-site.new"
+grep -q "zegravity-crm:3000" /tmp/zg-site.new || fail "could not adapt $TEMPLATE_PATH (unexpected upstream)"
+mv /tmp/zg-site.new "$SITE_FILE"
 reload_proxy_or_revert "$SITE_FILE"
 
 step "Checking https://$DOMAIN"
