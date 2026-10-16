@@ -87,6 +87,8 @@ networks:
 EOF
 docker compose pull --quiet </dev/null
 docker compose up -d </dev/null
+# nginx resolves upstream names once at load; refresh it after containers are recreated.
+docker exec "$PROXY_CONTAINER" nginx -s reload </dev/null >/dev/null 2>&1 || true
 
 step "Waiting for the CRM to start (first start sets up the database, up to 10 minutes)"
 for _ in $(seq 1 120); do
@@ -150,6 +152,8 @@ fi
 if [ -d "/etc/letsencrypt/live/$OLD_DOMAIN" ] && command -v certbot >/dev/null; then
   certbot delete --cert-name "$OLD_DOMAIN" --non-interactive </dev/null >/dev/null 2>&1 && echo "deleted the $OLD_DOMAIN certificate" || true
 fi
+
+docker exec "$PROXY_CONTAINER" nginx -s reload </dev/null >/dev/null 2>&1 || true
 
 step "Checking https://$DOMAIN"
 sleep 3

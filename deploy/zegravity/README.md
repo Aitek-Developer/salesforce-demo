@@ -30,7 +30,7 @@ makes stored secrets unreadable.
 ## Update
 
 ```bash
-cd /opt/zegravity-crm && docker compose pull && docker compose up -d
+cd /opt/zegravity-crm && docker compose pull && docker compose up -d && docker exec nginx-proxy-nginx-1 nginx -s reload
 ```
 
 ## Licence
