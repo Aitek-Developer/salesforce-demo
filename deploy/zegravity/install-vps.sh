@@ -60,6 +60,8 @@ step "Installing the CRM in $APP_DIR"
 mkdir -p "$APP_DIR"
 cd "$APP_DIR"
 curl -fsSL "$RAW/docker-compose.yml" -o docker-compose.yml
+mkdir -p sms
+curl -fsSL "$RAW/sms/server.mjs" -o sms/server.mjs
 if [ ! -f .env ]; then
   umask 077
   printf 'TAG=latest\nSERVER_URL=https://%s\nENCRYPTION_KEY=%s\nPG_DATABASE_PASSWORD=%s\nSTORAGE_TYPE=local\n' \
@@ -80,6 +82,11 @@ services:
       default: {}
       proxy:
         aliases: [zegravity-crm]
+  sms:
+    networks:
+      default: {}
+      proxy:
+        aliases: [zegravity-sms]
 networks:
   proxy:
     external: true

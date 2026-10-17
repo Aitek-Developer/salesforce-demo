@@ -61,6 +61,29 @@ services:
         condition: service_healthy
     restart: always
 
+  # Twilio texting bridge (sms/server.mjs). Idle until the TWILIO_* and SMS_CRM_API_KEY
+  # values are in .env; nginx routes https://<crm>/sms/ to it.
+  sms:
+    image: node:22-alpine
+    command: ["node", "/app/server.mjs"]
+    volumes:
+      - ./sms/server.mjs:/app/server.mjs:ro
+    environment:
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_MESSAGING_SERVICE_SID: ${TWILIO_MESSAGING_SERVICE_SID:-}
+      TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER:-}
+      SMS_CRM_API_KEY: ${SMS_CRM_API_KEY:-}
+      SMS_CRM_URL: http://server:3000
+      SMS_PUBLIC_URL: ${SERVER_URL}
+      PORT: 8080
+    healthcheck:
+      test: wget -q -O /dev/null http://localhost:8080/sms/health || [ "$$?" = 8 ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: always
+
   db:
     image: postgres:16
     volumes:
