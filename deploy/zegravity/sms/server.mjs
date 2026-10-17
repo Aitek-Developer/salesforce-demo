@@ -1,12 +1,15 @@
-// ZeGravity SMS bridge: sends texts to CRM leads through Twilio and records replies.
+// ZeGravity SMS bridge: texts and calls CRM leads through Twilio and records replies and calls.
 //
 //   POST /sms/send             {textMessageId}  called by the CRM "Send text" workflow
 //   POST /sms/twilio/inbound   Twilio incoming-message webhook (signature checked)
 //   POST /sms/twilio/status    Twilio delivery-status callback (signature checked)
+//   POST /sms/call             {phoneCallId}    called by the CRM "Call lead" workflow
+//   POST /sms/twilio/voice/*   Twilio voice webhooks (signature checked)
 //   GET  /sms/health
 //
-// /sms/send needs no shared secret: it only sends a Text Message record that a CRM user
-// created minutes ago with status "pending", read back through the bridge's own CRM key.
+// /sms/send and /sms/call need no shared secret: they only act on a Text Message or Phone Call
+// record that a CRM user created minutes ago with status "pending", read back with the bridge's
+// own CRM key. Calls ring the owner's phone first, then connect to the lead; nothing is recorded.
 // Twilio keys and the CRM API key live only in the server's .env. No npm dependencies.
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { createServer } from 'node:http';
@@ -31,6 +34,11 @@ export function loadConfig(env = process.env) {
     // Sending window in Chicago time; 10:00-20:00 Central stays inside 8am-9pm for every US mainland zone.
     windowStartHour: Number(env.SMS_WINDOW_START_HOUR ?? 10),
     windowEndHour: Number(env.SMS_WINDOW_END_HOUR ?? 20),
+    // Calling is optional: off until both numbers are set; texting works without it.
+    voiceNumber: env.TWILIO_VOICE_NUMBER?.trim() || env.TWILIO_FROM_NUMBER?.trim() || '',
+    agentPhone: env.VOICE_AGENT_PHONE?.trim() ?? '',
+    callStartHour: Number(env.CALL_WINDOW_START_HOUR ?? 9),
+    callEndHour: Number(env.CALL_WINDOW_END_HOUR ?? 20),
   };
   const missing = [];
   if (!config.accountSid) missing.push('TWILIO_ACCOUNT_SID');
@@ -84,6 +92,21 @@ export function composeText(body, { brand, firstText }) {
   if (!text.toLowerCase().startsWith(brand.toLowerCase())) text = `${brand}: ${text}`;
   if (firstText && !/\bSTOP\b/.test(text)) text = `${text} Reply STOP to opt out.`;
   return text;
+}
+
+export function voiceReady(config) {
+  return /^\+\d{10,15}$/.test(config.voiceNumber) && /^\+\d{10,15}$/.test(config.agentPhone);
+}
+
+export function xml(text) {
+  return String(text ?? '').replace(/[<>&'"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[c]));
+}
+
+const twiml = (inner = '') => `<?xml version="1.0" encoding="UTF-8"?><Response>${inner}</Response>`;
+
+function minutes(seconds) {
+  const s = Number(seconds) || 0;
+  return s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s`;
 }
 
 function preview(text) {
@@ -192,18 +215,8 @@ export function createBridge(config, { request = fetch, now = () => new Date(), 
     if (lead.sequenceStatus === 'ACTIVE') update.sequenceStatus = 'REPLIED';
     await crm(`leads/${lead.id}`, { method: 'PATCH', body: JSON.stringify(update) });
     if (keyword === 'HELP' || START_WORDS.has(keyword)) return;
-    const task = await crm('tasks', {
-      method: 'POST',
-      body: JSON.stringify({
-        title: `Lead texted back: ${lead.name ?? from}`,
-        status: 'TODO',
-        ...(lead.ownerId ? { assigneeId: lead.ownerId } : {}),
-        dueAt: now().toISOString(),
-        bodyV2: { markdown: `They texted: "${preview(body)}"\n\nReply from the lead's page with **Send text**, or call them. Their phone: ${from}` },
-      }),
-    });
-    const taskId = task?.data?.createTask?.id;
-    if (taskId) await crm('taskTargets', { method: 'POST', body: JSON.stringify({ taskId, targetLeadId: lead.id }) });
+    await createTask(lead, `Lead texted back: ${lead.name ?? from}`,
+      `They texted: "${preview(body)}"\n\nReply from the lead's page with **Send text**, or call them. Their phone: ${from}`);
   }
 
   async function status(params) {
@@ -217,7 +230,134 @@ export function createBridge(config, { request = fetch, now = () => new Date(), 
     await crm(`textMessages/${message.id}`, { method: 'PATCH', body: JSON.stringify({ deliveryStatus: detail }) });
   }
 
-  return { send, inbound, status, findLeadByPhone };
+  async function createTask(lead, title, markdown) {
+    const task = await crm('tasks', {
+      method: 'POST',
+      body: JSON.stringify({
+        title, status: 'TODO', dueAt: now().toISOString(), bodyV2: { markdown },
+        ...(lead?.ownerId ? { assigneeId: lead.ownerId } : {}),
+      }),
+    });
+    const taskId = task?.data?.createTask?.id;
+    if (taskId && lead) await crm('taskTargets', { method: 'POST', body: JSON.stringify({ taskId, targetLeadId: lead.id }) });
+  }
+
+  const getCall = async (id) => (await crm(`phoneCalls/${id}`))?.data?.phoneCall ?? null;
+  const markCall = (id, fields) => crm(`phoneCalls/${id}`, { method: 'PATCH', body: JSON.stringify(fields) });
+  const voiceUrl = (step, id) => `${config.publicUrl}/sms/twilio/voice/${step}?call=${encodeURIComponent(id)}`;
+
+  // Click-to-call: Twilio rings the owner's phone; when they answer, /voice/connect dials the lead.
+  async function call({ phoneCallId }) {
+    if (!voiceReady(config)) return { status: 503, result: { ok: false, error: 'Calling is not set up (TWILIO_VOICE_NUMBER and VOICE_AGENT_PHONE)' } };
+    if (typeof phoneCallId !== 'string' || !/^[0-9a-f-]{36}$/i.test(phoneCallId)) {
+      return { status: 400, result: { ok: false, error: 'phoneCallId is missing or not an id' } };
+    }
+    const pending = await getCall(phoneCallId);
+    if (!pending) return { status: 404, result: { ok: false, error: 'Phone call not found' } };
+    const age = now().getTime() - new Date(pending.createdAt).getTime();
+    if (pending.direction !== 'OUTBOUND' || pending.callStatus !== 'pending' || pending.twilioCallSid || !(age >= 0 && age < PENDING_MAX_AGE_MS)) {
+      return { status: 409, result: { ok: false, error: 'Only a new pending call can be placed' } };
+    }
+    const refuse = async (reason, status = 409) => {
+      await markCall(phoneCallId, { callStatus: `not placed: ${reason}` });
+      return { status, result: { ok: false, error: reason } };
+    };
+    await markCall(phoneCallId, { callStatus: 'calling you' });
+    const lead = pending.leadId ? (await crm(`leads/${pending.leadId}`))?.data?.lead : null;
+    if (!lead) return refuse('the call is not linked to a lead', 404);
+    const to = e164FromLead(lead.phones);
+    if (!to) return refuse('the lead has no valid phone number');
+    if (lead.doNotCall) return refuse('the lead is marked "Do not call"');
+    const hour = chicagoHour(now());
+    if (hour < config.callStartHour || hour >= config.callEndHour) {
+      return refuse(`calls are placed only between ${config.callStartHour}:00 and ${config.callEndHour}:00 Central time`);
+    }
+    const form = new URLSearchParams({
+      To: config.agentPhone, From: config.voiceNumber, Url: voiceUrl('connect', phoneCallId), Timeout: '25',
+      StatusCallback: voiceUrl('agent-status', phoneCallId),
+    });
+    const twilio = await request(`https://api.twilio.com/2010-04-01/Accounts/${config.accountSid}/Calls.json`, {
+      method: 'POST',
+      headers: { Authorization: `Basic ${Buffer.from(`${config.accountSid}:${config.authToken}`).toString('base64')}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: form.toString(),
+      signal: AbortSignal.timeout(15000),
+    });
+    const placed = await twilio.json().catch(() => ({}));
+    if (!twilio.ok) return refuse(`${placed.message ?? `Twilio answered ${twilio.status}`}${placed.code ? ` (code ${placed.code})` : ''}`, 502);
+    await markCall(phoneCallId, { name: `Call to ${lead.name ?? to}`, phone: to, twilioCallSid: placed.sid ?? '' });
+    return { status: 200, result: { ok: true, sid: placed.sid, to } };
+  }
+
+  // The owner answered: announce the lead and dial them from the business number.
+  async function voiceConnect(id) {
+    const record = id ? await getCall(id) : null;
+    const lead = record?.leadId ? (await crm(`leads/${record.leadId}`))?.data?.lead : null;
+    const to = lead ? e164FromLead(lead.phones) : null;
+    if (!record || !to || lead.doNotCall) {
+      if (record) await markCall(id, { callStatus: 'not placed: the lead can no longer be called' });
+      return twiml('<Say>This call can no longer be connected. Goodbye.</Say><Hangup/>');
+    }
+    await markCall(id, { callStatus: 'connecting' });
+    return twiml(`<Say>Connecting you to ${xml(lead.name ?? 'the lead')}.</Say>`
+      + `<Dial callerId="${xml(config.voiceNumber)}" timeout="25" action="${xml(voiceUrl('dialed', id))}"><Number>${xml(to)}</Number></Dial>`);
+  }
+
+  async function voiceDialed(id, params) {
+    const record = id ? await getCall(id) : null;
+    if (record) {
+      const state = params.DialCallStatus ?? 'unknown';
+      const seconds = Number(params.DialCallDuration ?? 0);
+      const who = String(record.name ?? 'Call').replace(/ \(.*\)$/, '');
+      await markCall(id, { callStatus: state, durationSeconds: seconds, name: `${who} (${state}${seconds ? `, ${minutes(seconds)}` : ''})` });
+    }
+    return twiml('<Hangup/>');
+  }
+
+  // The owner's leg ended; if they never picked up, say so on the record.
+  async function voiceAgentStatus(id, params) {
+    const record = id ? await getCall(id) : null;
+    const state = params.CallStatus ?? '';
+    if (record && record.callStatus === 'calling you' && ['no-answer', 'busy', 'failed', 'canceled'].includes(state)) {
+      await markCall(id, { callStatus: `you did not answer (${state})` });
+    }
+  }
+
+  // A call to the business number rings the owner's phone; a missed call becomes a task.
+  async function voiceInbound(params) {
+    const from = params.From ?? '';
+    const lead = await findLeadByPhone(from);
+    const created = await crm('phoneCalls', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: `Call from ${lead?.name ?? from}`, direction: 'INBOUND', phone: from, callStatus: 'ringing you',
+        twilioCallSid: params.CallSid ?? '', ...(lead ? { leadId: lead.id } : {}),
+      }),
+    });
+    const id = created?.data?.createPhoneCall?.id ?? '';
+    if (!voiceReady(config)) {
+      return twiml(`<Say>Thanks for calling ${xml(config.brand)}. Please call back later or send us a text.</Say><Hangup/>`);
+    }
+    // Shows the caller's number on the owner's phone.
+    return twiml(`<Dial callerId="${xml(from || config.voiceNumber)}" timeout="20" action="${xml(voiceUrl('inbound-done', id))}"><Number>${xml(config.agentPhone)}</Number></Dial>`);
+  }
+
+  async function voiceInboundDone(id, params) {
+    const record = id ? await getCall(id) : null;
+    const state = params.DialCallStatus ?? 'unknown';
+    const seconds = Number(params.DialCallDuration ?? 0);
+    if (record) {
+      const who = String(record.name ?? 'Call');
+      await markCall(id, { callStatus: state === 'completed' ? 'completed' : `missed (${state})`, durationSeconds: seconds,
+        name: state === 'completed' ? `${who} (${minutes(seconds)})` : `Missed: ${who}` });
+    }
+    if (state === 'completed') return twiml('<Hangup/>');
+    const lead = record?.leadId ? (await crm(`leads/${record.leadId}`))?.data?.lead : null;
+    const from = params.From ?? record?.phone ?? '';
+    await createTask(lead, `Missed call: ${lead?.name ?? from}`, `They called ${config.brand} and nobody answered. Call them back: ${from}`);
+    return twiml(`<Say>Thanks for calling ${xml(config.brand)}. We missed your call and will call you back soon. Goodbye.</Say><Hangup/>`);
+  }
+
+  return { send, inbound, status, findLeadByPhone, call, voiceConnect, voiceDialed, voiceAgentStatus, voiceInbound, voiceInboundDone };
 }
 
 async function readBody(req, limit = 64 * 1024) {
@@ -240,10 +380,11 @@ export function createHandler(config, missing, deps = {}) {
   };
 
   return async (req, res) => {
-    const path = new URL(req.url ?? '/', 'http://local').pathname;
+    const url = new URL(req.url ?? '/', 'http://local');
+    const path = url.pathname;
     try {
       if (req.method === 'GET' && path === '/sms/health') {
-        return reply(res, missing.length ? 503 : 200, { ok: missing.length === 0, missing });
+        return reply(res, missing.length ? 503 : 200, { ok: missing.length === 0, missing, calling: voiceReady(config) });
       }
       if (missing.length) return reply(res, 503, { ok: false, error: 'SMS bridge is not configured', missing });
 
@@ -252,6 +393,33 @@ export function createHandler(config, missing, deps = {}) {
         try { input = JSON.parse(await readBody(req)); } catch { return reply(res, 400, { ok: false, error: 'Body must be JSON' }); }
         const { status, result } = await bridge.send(input ?? {});
         return reply(res, status, result);
+      }
+
+      if (req.method === 'POST' && path === '/sms/call') {
+        let input;
+        try { input = JSON.parse(await readBody(req)); } catch { return reply(res, 400, { ok: false, error: 'Body must be JSON' }); }
+        const { status, result } = await bridge.call(input ?? {});
+        return reply(res, status, result);
+      }
+
+      if (req.method === 'POST' && path.startsWith('/sms/twilio/voice/')) {
+        const params = Object.fromEntries(new URLSearchParams(await readBody(req)));
+        // Twilio signs the full URL it called, including the ?call= query.
+        if (!signatureValid(config.authToken, `${config.publicUrl}${path}${url.search}`, params, req.headers['x-twilio-signature'])) {
+          log.warn?.(`rejected unsigned request to ${path}`);
+          return reply(res, 403, { ok: false, error: 'Invalid Twilio signature' });
+        }
+        const id = url.searchParams.get('call') ?? '';
+        const step = path.slice('/sms/twilio/voice/'.length);
+        const handlers = {
+          inbound: () => bridge.voiceInbound(params),
+          connect: () => bridge.voiceConnect(id),
+          dialed: () => bridge.voiceDialed(id, params),
+          'inbound-done': () => bridge.voiceInboundDone(id, params),
+          'agent-status': async () => { await bridge.voiceAgentStatus(id, params); return twiml(); },
+        };
+        if (!handlers[step]) return reply(res, 404, { ok: false, error: 'Not found' });
+        return reply(res, 200, await handlers[step](), 'text/xml');
       }
 
       if (req.method === 'POST' && (path === '/sms/twilio/inbound' || path === '/sms/twilio/status')) {

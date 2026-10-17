@@ -186,3 +186,105 @@ test('delivery updates are written to the logged text', async (t) => {
   await twilioPost(base, '/sms/twilio/status', { MessageSid: 'SM123', MessageStatus: 'undelivered', ErrorCode: '30007' });
   assert.deepEqual(crmWrites(apis.calls, 'textMessages/tm-1')[0], { deliveryStatus: 'undelivered (error 30007)' });
 });
+
+// Calling
+const CALL_ID = '3c57c45a-95d7-4079-bf99-4c4c86426293';
+const voiceEnv = { TWILIO_VOICE_NUMBER: '+18723287888', VOICE_AGENT_PHONE: '+13125550100' };
+
+function pendingCall(overrides = {}) {
+  return { id: CALL_ID, leadId: LEAD_ID, direction: 'OUTBOUND', callStatus: 'pending', twilioCallSid: null, name: 'Call to Maria Lopez',
+    createdAt: new Date(NOON_CHICAGO.getTime() - 30000).toISOString(), ...overrides };
+}
+
+function voiceApis({ crmLead = lead(), record = pendingCall(), twilioStatus = 201 } = {}) {
+  const base = fakeApis({ crmLead });
+  const request = async (url, init = {}) => {
+    const method = init.method ?? 'GET';
+    const json = (status, data) => new Response(JSON.stringify(data), { status });
+    const path = decodeURIComponent(url.replace('http://crm.test/rest/', ''));
+    if (url.includes('/Calls.json')) {
+      base.calls.push({ url, method, body: init.body });
+      return twilioStatus === 201 ? json(201, { sid: 'CA123', status: 'queued' }) : json(twilioStatus, { code: 21215, message: 'Geo permission denied' });
+    }
+    if (method === 'GET' && path === `phoneCalls/${CALL_ID}`) { base.calls.push({ url, method }); return json(200, { data: { phoneCall: record } }); }
+    if (method === 'POST' && path === 'phoneCalls') { base.calls.push({ url, method, body: init.body }); return json(201, { data: { createPhoneCall: { id: CALL_ID } } }); }
+    return base.request(url, init);
+  };
+  return { calls: base.calls, request };
+}
+
+const placeCall = (base, body = { phoneCallId: CALL_ID }) => fetch(`${base}/sms/call`, {
+  method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+});
+
+test('calling stays off until the business number and the owner phone are set; texting still works', async (t) => {
+  const base = await serve(t, voiceApis());
+  const health = await (await fetch(`${base}/sms/health`)).json();
+  assert.equal(health.ok, true);
+  assert.equal(health.calling, false);
+  assert.equal((await placeCall(base)).status, 503);
+});
+
+test('click-to-call rings the owner first, then connects the lead from the business number', async (t) => {
+  const apis = voiceApis();
+  const base = await serve(t, apis, { envOverrides: voiceEnv });
+  const response = await placeCall(base);
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { ok: true, sid: 'CA123', to: '+15125550142' });
+  const twilio = new URLSearchParams(apis.calls.find((c) => c.url.includes('Calls.json')).body);
+  assert.equal(twilio.get('To'), '+13125550100');
+  assert.equal(twilio.get('From'), '+18723287888');
+  assert.equal(twilio.get('Url'), `https://crm.zegravity.com/sms/twilio/voice/connect?call=${CALL_ID}`);
+  const writes = crmWrites(apis.calls, `phoneCalls/${CALL_ID}`);
+  assert.equal(writes[0].callStatus, 'calling you');
+  assert.equal(writes.at(-1).twilioCallSid, 'CA123');
+
+  // The owner answered: Twilio fetches the connect step, which must be signed with its query string.
+  const path = `/sms/twilio/voice/connect?call=${CALL_ID}`;
+  assert.equal((await twilioPost(base, path, { CallStatus: 'in-progress' }, 'bad')).status, 403);
+  const connect = await twilioPost(base, path, { CallStatus: 'in-progress' });
+  const xmlBody = await connect.text();
+  assert.equal(connect.status, 200);
+  assert.match(xmlBody, /<Say>Connecting you to Maria Lopez\.<\/Say>/);
+  assert.match(xmlBody, /<Dial callerId="\+18723287888"[^>]*><Number>\+15125550142<\/Number><\/Dial>/);
+  assert.doesNotMatch(xmlBody, /record/i);
+
+  const dialed = await twilioPost(base, `/sms/twilio/voice/dialed?call=${CALL_ID}`, { DialCallStatus: 'completed', DialCallDuration: '95' });
+  assert.match(await dialed.text(), /<Hangup\/>/);
+  const last = crmWrites(apis.calls, `phoneCalls/${CALL_ID}`).at(-1);
+  assert.equal(last.callStatus, 'completed');
+  assert.equal(last.durationSeconds, 95);
+});
+
+test('does not place a call to a do-not-call lead, outside calling hours, or twice', async (t) => {
+  const noCall = voiceApis({ crmLead: lead({ doNotCall: true }) });
+  let base = await serve(t, noCall, { envOverrides: voiceEnv });
+  assert.equal((await placeCall(base)).status, 409);
+  assert.equal(noCall.calls.some((c) => c.url.includes('Calls.json')), false);
+  assert.match(crmWrites(noCall.calls, `phoneCalls/${CALL_ID}`).at(-1).callStatus, /Do not call/);
+
+  const late = voiceApis();
+  base = await serve(t, late, { envOverrides: voiceEnv, now: new Date('2026-10-18T03:00:00Z') });
+  assert.equal((await placeCall(base)).status, 409);
+  assert.equal(late.calls.some((c) => c.url.includes('Calls.json')), false);
+
+  const again = voiceApis({ record: pendingCall({ callStatus: 'completed', twilioCallSid: 'CA1' }) });
+  base = await serve(t, again, { envOverrides: voiceEnv });
+  assert.equal((await placeCall(base)).status, 409);
+});
+
+test('an inbound call rings the owner and a missed one becomes a task on the lead', async (t) => {
+  const apis = voiceApis({ record: pendingCall({ direction: 'INBOUND', callStatus: 'ringing you', name: 'Call from Maria Lopez', phone: '+15125550142' }) });
+  const base = await serve(t, apis, { envOverrides: voiceEnv });
+  const inbound = await twilioPost(base, '/sms/twilio/voice/inbound', { From: '+15125550142', CallSid: 'CA9' });
+  assert.match(await inbound.text(), /<Dial callerId="\+15125550142"[^>]*><Number>\+13125550100<\/Number><\/Dial>/);
+  const created = JSON.parse(apis.calls.find((c) => c.method === 'POST' && c.url.endsWith('/phoneCalls')).body);
+  assert.equal(created.direction, 'INBOUND');
+  assert.equal(created.leadId, LEAD_ID);
+
+  const done = await twilioPost(base, `/sms/twilio/voice/inbound-done?call=${CALL_ID}`, { DialCallStatus: 'no-answer', From: '+15125550142' });
+  assert.match(await done.text(), /will call you back/);
+  assert.equal(crmWrites(apis.calls, `phoneCalls/${CALL_ID}`).at(-1).callStatus, 'missed (no-answer)');
+  assert.match(crmWrites(apis.calls, 'tasks')[0].title, /Missed call: Maria Lopez/);
+  assert.equal(crmWrites(apis.calls, 'taskTargets')[0].targetLeadId, LEAD_ID);
+});

@@ -3,6 +3,7 @@
 #
 #   curl -fsSL https://raw.githubusercontent.com/Aitek-Developer/salesforce-demo/zegravity/deploy/zegravity/sms-install.sh | bash
 #   ... | bash -s -- --keys     re-enter the Twilio and CRM keys
+#   ... | bash -s -- --calling  turn on calling (asks for the business number and your mobile)
 #
 # Asks for any missing key with hidden typing and saves it only in /opt/zegravity-crm/.env.
 # Adds one /sms/ route to the CRM's nginx site; a config nginx rejects is rolled back.
@@ -15,7 +16,9 @@ PROXY_CONTAINER=nginx-proxy-nginx-1
 PROXY_NETWORK=zg_proxy
 RAW=https://raw.githubusercontent.com/Aitek-Developer/salesforce-demo/zegravity/deploy/zegravity
 REENTER=false
+CALLING=false
 [ "${1:-}" = "--keys" ] && REENTER=true
+[ "${1:-}" = "--calling" ] && CALLING=true
 
 step() { printf '\n== %s\n' "$*"; }
 fail() { printf '\nSTOPPED: %s\n' "$*" >&2; exit 1; }
@@ -75,6 +78,11 @@ ask TWILIO_ACCOUNT_SID "Twilio Account SID (starts with AC)" 'AC[0-9a-f]{32}' vi
 ask TWILIO_AUTH_TOKEN "Twilio Auth Token" '[0-9a-f]{32}' hidden
 ask TWILIO_MESSAGING_SERVICE_SID "Twilio Messaging Service SID (starts with MG)" 'MG[0-9a-f]{32}' visible
 ask SMS_CRM_API_KEY "ZeGravity CRM API key for the texting bridge" '[A-Za-z0-9._-]{20,}' hidden
+if [ "$CALLING" = true ]; then
+  REENTER=true
+  ask TWILIO_VOICE_NUMBER "Business number calls come from, e.g. +18723287888" '\+[0-9]{10,15}' visible
+  ask VOICE_AGENT_PHONE "Your mobile number that rings first, e.g. +13125550100" '\+[0-9]{10,15}' visible
+fi
 
 step "Starting the bridge"
 docker compose up -d sms </dev/null
@@ -131,6 +139,7 @@ sleep 2
 health=$(curl -s "$DOMAIN/sms/health" || true)
 echo "$DOMAIN/sms/health -> $health"
 case "$health" in
+  *'"calling":true'*) printf '\nDONE: texting and calling are live at %s/sms/\nPoint the number'"'"'s Voice webhook to %s/sms/twilio/voice/inbound (POST)\n' "$DOMAIN" "$DOMAIN" ;;
   *'"ok":true'*) printf '\nDONE: texting bridge is live at %s/sms/\n' "$DOMAIN" ;;
   *) fail "the bridge did not report healthy; run: cd $APP_DIR && docker compose logs --tail 40 sms" ;;
 esac
